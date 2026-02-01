@@ -10,16 +10,16 @@
             --light-pink: #ff85a1;
         }
 
-        /* Prevent all scrolling and bounce effects */
+        /* Fix for mobile height issues */
         html, body {
             height: 100%;
             width: 100%;
             margin: 0;
             padding: 0;
             overflow: hidden;
-            position: fixed;
             background-color: #fce4ec;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none; /* Prevents scrolling while trying to tap */
         }
 
         body {
@@ -29,14 +29,13 @@
             background: linear-gradient(135deg, #fce4ec 0%, #ffc1cc 100%);
         }
 
-        /* This is the safe zone. The buttons will NEVER leave this box. */
         .game-area {
             position: relative;
             width: 90vw;
-            height: 80vh;
+            height: 85vh;
             max-width: 400px;
             max-height: 600px;
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(10px);
             border-radius: 30px;
             padding: 20px;
@@ -44,57 +43,60 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
             border: 2px solid white;
+            box-sizing: border-box;
         }
 
         h1 {
             color: #c9184a;
-            font-size: 1.8rem;
-            margin-bottom: 40px;
+            font-size: 1.6rem;
+            margin-top: 20px;
+            margin-bottom: 20px;
             text-align: center;
-            pointer-events: none; /* So it doesn't interfere with taps */
+            pointer-events: none;
+            z-index: 10;
         }
 
         #button-container {
+            flex-grow: 1;
             width: 100%;
-            height: 100px;
-            position: relative; /* Anchor for the buttons */
+            position: relative; /* All buttons will move relative to this container */
         }
 
         button {
-            padding: 15px 30px;
+            padding: 15px 25px;
             font-size: 1.1rem;
             font-weight: bold;
             border: none;
             border-radius: 50px;
             cursor: pointer;
-            position: absolute; /* Relative to #button-container */
-            transition: all 0.2s ease-out;
+            position: absolute; 
+            transition: all 0.2s ease;
             white-space: nowrap;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            touch-action: none;
         }
 
         #yesBtn {
             background: var(--pink);
             color: white;
             left: 10%;
-            top: 0;
+            top: 40%;
         }
 
         #noBtn {
             background: white;
             color: #555;
             right: 10%;
-            top: 0;
+            top: 40%;
         }
 
-        /* Success State */
         .hidden { display: none !important; }
         
         .success-content {
             text-align: center;
             animation: scaleUp 0.5s ease-out;
+            padding: 20px;
         }
 
         @keyframes scaleUp {
@@ -106,6 +108,7 @@
             position: fixed;
             top: -10%;
             pointer-events: none;
+            z-index: 1000;
             animation: fall linear forwards;
         }
 
@@ -117,8 +120,8 @@
 <body>
 
     <div class="game-area" id="gameArea">
-        <div id="main-ui">
-            <div style="font-size: 50px; text-align: center; margin-bottom: 10px;">💝💝💝💝💝</div>
+        <div id="main-ui" style="width: 100%; height: 100%; display: flex; flex-direction: column;">
+            <div style="font-size: 40px; text-align: center;">💝💝💝💝💝</div>
             <h1 id="question">Aigli will you be my Valentine?</h1>
             
             <div id="button-container">
@@ -138,30 +141,26 @@
         const yesBtn = document.getElementById('yesBtn');
         const noBtn = document.getElementById('noBtn');
         const container = document.getElementById('button-container');
-        const gameArea = document.getElementById('gameArea');
+        const mainUi = document.getElementById('main-ui');
         
         let attempts = 0;
-        const MAX_ATTEMPTS = 16;
+        const MAX_ATTEMPTS = 12; // Adjusted for better UX on mobile
 
         function moveButton(btn) {
-            // Get dimensions of the game area ONLY
-            const areaWidth = gameArea.clientWidth;
-            const areaHeight = gameArea.clientHeight;
+            // Get the container dimensions (safe area)
+            const containerWidth = container.offsetWidth;
+            const containerHeight = container.offsetHeight;
             
-            // Get button dimensions
             const btnWidth = btn.offsetWidth;
             const btnHeight = btn.offsetHeight;
 
-            // Calculate safe boundaries relative to the Game Area
-            // We keep it within the gameArea box, not the whole screen
-            const maxX = areaWidth - btnWidth - 40; 
-            const maxY = areaHeight - btnHeight - 40;
+            // Strict boundaries to keep button inside the white box
+            const maxX = containerWidth - btnWidth;
+            const maxY = containerHeight - btnHeight;
 
-            // Random position
-            const randomX = Math.floor(Math.random() * maxX) + 20;
-            const randomY = Math.floor(Math.random() * maxY) - (areaHeight / 2) + 20;
+            const randomX = Math.max(0, Math.floor(Math.random() * maxX));
+            const randomY = Math.max(0, Math.floor(Math.random() * maxY));
 
-            // Move the button using absolute positioning inside the flex container
             btn.style.left = randomX + "px";
             btn.style.top = randomY + "px";
 
@@ -174,29 +173,38 @@
         }
 
         function stopGame() {
-            yesBtn.style.position = "static";
-            yesBtn.style.transform = "scale(1.4)";
+            // Remove absolute positioning to center the button
+            yesBtn.style.position = "relative";
+            yesBtn.style.left = "0";
+            yesBtn.style.top = "0";
+            yesBtn.style.transform = "scale(1.5)";
             noBtn.style.display = "none";
+            
             document.getElementById('question').innerHTML = "Τι έγινε ρε μωρό δεν μπορούμε να πατήσουμε το κουμπι?";
             container.style.display = "flex";
             container.style.justifyContent = "center";
             container.style.alignItems = "center";
         }
 
-        // Event Listeners for both Buttons
+        // Fix for Instagram: Use both touchstart and click
         [yesBtn, noBtn].forEach(btn => {
-            btn.addEventListener('mouseover', () => moveButton(btn));
             btn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
+                e.preventDefault(); // Prevents "ghost clicks"
                 moveButton(btn);
+            });
+            // Keeping mouseover for desktop browsers
+            btn.addEventListener('mouseover', () => {
+                if(window.innerWidth > 768) moveButton(btn);
             });
         });
 
-        // Final Click
-        yesBtn.addEventListener('click', () => {
-            document.getElementById('main-ui').classList.add('hidden');
-            document.getElementById('success-ui').classList.remove('hidden');
-            startHearts();
+        // The only way to trigger success is a real click/tap AFTER the button stops moving
+        yesBtn.addEventListener('click', (e) => {
+            if (attempts >= MAX_ATTEMPTS || window.innerWidth > 768) {
+                document.getElementById('main-ui').classList.add('hidden');
+                document.getElementById('success-ui').classList.remove('hidden');
+                startHearts();
+            }
         });
 
         function startHearts() {
