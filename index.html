@@ -138,87 +138,100 @@
     </div>
 
     <script>
-        const yesBtn = document.getElementById('yesBtn');
-        const noBtn = document.getElementById('noBtn');
-        const container = document.getElementById('button-container');
-        const mainUi = document.getElementById('main-ui');
+    const yesBtn = document.getElementById('yesBtn');
+    const noBtn = document.getElementById('noBtn');
+    const container = document.getElementById('button-container');
+    
+    let attempts = 0;
+    const MAX_ATTEMPTS = 12;
+
+    function moveButton(btn) {
+        // Αν έχουμε φτάσει το όριο, σταματάμε τη μετακίνηση
+        if (attempts >= MAX_ATTEMPTS) return;
+
+        const containerWidth = container.offsetWidth;
+        const containerHeight = container.offsetHeight;
+        const btnWidth = btn.offsetWidth;
+        const btnHeight = btn.offsetHeight;
+
+        const maxX = containerWidth - btnWidth;
+        const maxY = containerHeight - btnHeight;
+
+        const randomX = Math.max(0, Math.floor(Math.random() * maxX));
+        const randomY = Math.max(0, Math.floor(Math.random() * maxY));
+
+        btn.style.left = randomX + "px";
+        btn.style.top = randomY + "px";
+
+        if (btn === yesBtn) {
+            attempts++;
+            if (attempts >= MAX_ATTEMPTS) {
+                stopGame();
+            }
+        }
+    }
+
+    function stopGame() {
+        // Καθαρίζουμε το κουμπί από το απόλυτο positioning για να κεντραριστεί
+        yesBtn.style.position = "relative";
+        yesBtn.style.left = "0";
+        yesBtn.style.top = "0";
+        yesBtn.style.transform = "scale(1.5)";
+        yesBtn.style.zIndex = "9999";
         
-        let attempts = 0;
-        const MAX_ATTEMPTS = 12; // Adjusted for better UX on mobile
+        noBtn.style.display = "none";
+        
+        document.getElementById('question').innerHTML = "Τι έγινε ρε μωρό δεν μπορούμε να πατήσουμε το κουμπι?";
+        container.style.display = "flex";
+        container.style.justifyContent = "center";
+        container.style.alignItems = "center";
 
-        function moveButton(btn) {
-            // Get the container dimensions (safe area)
-            const containerWidth = container.offsetWidth;
-            const containerHeight = container.offsetHeight;
-            
-            const btnWidth = btn.offsetWidth;
-            const btnHeight = btn.offsetHeight;
+        // Σημαντικό: Δημιουργούμε ένα νέο κλωνοποιημένο κουμπί για να σβήσουμε όλα τα παλιά events μετακίνησης
+        const newYesBtn = yesBtn.cloneNode(true);
+        yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
+        
+        // Το νέο κουμπί τώρα θα ακούει μόνο για την επιτυχία
+        const finalAction = () => {
+            document.getElementById('main-ui').classList.add('hidden');
+            document.getElementById('success-ui').classList.remove('hidden');
+            startHearts();
+        };
 
-            // Strict boundaries to keep button inside the white box
-            const maxX = containerWidth - btnWidth;
-            const maxY = containerHeight - btnHeight;
+        newYesBtn.addEventListener('click', finalAction);
+        newYesBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            finalAction();
+        });
+    }
 
-            const randomX = Math.max(0, Math.floor(Math.random() * maxX));
-            const randomY = Math.max(0, Math.floor(Math.random() * maxY));
-
-            btn.style.left = randomX + "px";
-            btn.style.top = randomY + "px";
-
-            if (btn === yesBtn) {
-                attempts++;
-                if (attempts >= MAX_ATTEMPTS) {
-                    stopGame();
-                }
-            }
-        }
-
-        function stopGame() {
-            // Remove absolute positioning to center the button
-            yesBtn.style.position = "relative";
-            yesBtn.style.left = "0";
-            yesBtn.style.top = "0";
-            yesBtn.style.transform = "scale(1.5)";
-            noBtn.style.display = "none";
-            
-            document.getElementById('question').innerHTML = "Τι έγινε ρε μωρό δεν μπορούμε να πατήσουμε το κουμπι?";
-            container.style.display = "flex";
-            container.style.justifyContent = "center";
-            container.style.alignItems = "center";
-        }
-
-        // Fix for Instagram: Use both touchstart and click
-        [yesBtn, noBtn].forEach(btn => {
-            btn.addEventListener('touchstart', (e) => {
-                e.preventDefault(); // Prevents "ghost clicks"
+    // Αρχικοί Listeners για τη μετακίνηση
+    [yesBtn, noBtn].forEach(btn => {
+        btn.addEventListener('touchstart', (e) => {
+            if (attempts < MAX_ATTEMPTS) {
+                e.preventDefault();
                 moveButton(btn);
-            });
-            // Keeping mouseover for desktop browsers
-            btn.addEventListener('mouseover', () => {
-                if(window.innerWidth > 768) moveButton(btn);
-            });
-        });
-
-        // The only way to trigger success is a real click/tap AFTER the button stops moving
-        yesBtn.addEventListener('click', (e) => {
-            if (attempts >= MAX_ATTEMPTS || window.innerWidth > 768) {
-                document.getElementById('main-ui').classList.add('hidden');
-                document.getElementById('success-ui').classList.remove('hidden');
-                startHearts();
             }
         });
+        btn.addEventListener('mouseover', () => {
+            if (attempts < MAX_ATTEMPTS) {
+                moveButton(btn);
+            }
+        });
+    });
 
-        function startHearts() {
-            setInterval(() => {
-                const heart = document.createElement("div");
-                heart.classList.add("heart");
-                heart.innerHTML = "❤️";
-                heart.style.left = Math.random() * 100 + "vw";
-                heart.style.fontSize = (Math.random() * 20 + 20) + "px";
-                heart.style.animationDuration = (Math.random() * 2 + 3) + "s";
-                document.body.appendChild(heart);
-                setTimeout(() => heart.remove(), 4000);
-            }, 150);
-        }
-    </script>
+    function startHearts() {
+        setInterval(() => {
+            const heart = document.createElement("div");
+            heart.classList.add("heart");
+            heart.innerHTML = "❤️";
+            heart.style.left = Math.random() * 100 + "vw";
+            heart.style.fontSize = (Math.random() * 20 + 20) + "px";
+            heart.style.animationDuration = (Math.random() * 2 + 3) + "s";
+            document.body.appendChild(heart);
+            setTimeout(() => heart.remove(), 4000);
+        }, 150);
+    }
+</script>
 </body>
 </html>
+
